@@ -47,8 +47,8 @@ class CKY:
         @:param productions: our grammar's rules as represented by nltk.productions()
         @:return unary and binary rule dictionaries with key: lhs of grammar rule, value: list of possible rhs
         '''
-        self.unary=defaultdict(list)
-        self.binary=defaultdict(list)
+        self.unary = defaultdict(list)
+        self.binary = defaultdict(list)
         for production in productions:
             rhs=production.rhs()
             lhs=production.lhs()
@@ -84,6 +84,7 @@ class CKY:
         # 1      Y   .
         # 2          .
         # ...
+        # initialize matrix and set empty cells for upper diagnose
         for r in range(self.n-1):
              # rows
              row=[]
@@ -111,7 +112,6 @@ class CKY:
 
         How: Add word and label from top left to bottom right of table by using unaryUpdate to label cells with parent node.
         '''
-
 
         for r in range(self.n-1):
             cell=self.matrix[r][r+1]
