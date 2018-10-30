@@ -24,12 +24,13 @@ class CKY:
         no more than two symbols on the right-hand side
 
         (We use "symbol" throughout this code to refer to _either_ a string or
-        an nltk.grammar.Nonterminal, that is, the two thinegs we find in
+        an nltk.grammar.Nonterminal, that is, the two things we find in
         nltk.grammar.Production)
 
         :type grammar: nltk.grammar.CFG, as fixed by cfg_fix
         :param grammar: A context-free grammar
-        :return: none'''
+        :return: none
+        '''
 
         self.verbose=False
         assert(isinstance(grammar,CFG))
@@ -38,7 +39,14 @@ class CKY:
         self.buildIndices(grammar.productions())
 
     def buildIndices(self,productions):
-        '''add docstring here'''
+        '''
+        Create separate dictionaries (defaultdict(list)) for unary and binary rules by identifying rules as
+        unary or binary, adding rhs of rule as key to relevant dictionary and appending lhs to list of corresponding
+        values. Dictionaries with lists as values corresponding to constituent combinations that can make up a rule
+        are used to determine parent nodes having identified constituent combinations.
+        @:param productions: our grammar's rules as represented by nltk.productions()
+        @:return unary and binary rule dictionaries with key: lhs of grammar rule, value: list of possible rhs
+        '''
         self.unary=defaultdict(list)
         self.binary=defaultdict(list)
         for production in productions:
@@ -51,19 +59,19 @@ class CKY:
                 self.binary[rhs].append(lhs)
 
     def recognise(self,tokens,verbose=False):
-        '''replace/expand this docstring. Your docs need NOT
-        say anything more about the verbose option.
-
-        Initialise a matrix from the sentence,
-        then run the CKY algorithm over it
-
-        :type tokens:
-        :param tokens:
+        '''
+        Initialise a matrix from the sentence, then run the CKY algorithm over it.
+        Fills only cells where column index bigger than row --> only top left to bottom right diagonal.
+        First fills in diagonal (constituents corresponding to individual words) using unary.Fill with word and
+        constituent label, then checks for combinations of constituents (binary rules) using binary.Scan and fills cells
+        with lhs label if combination is found.
+        :type tokens: list of strings
+        :param tokens: list of words in sequence to be analyzed
         :type verbose: bool
         :param verbose: show debugging output if True, defaults to False
-        :rtype: 
-        :return:
-
+        :rtype: bool
+        :return: return whether a sentence is representable by given grammar by checking whether the top-right cell is
+        in the grammar
         '''
         self.verbose=verbose
         self.words = tokens
@@ -91,14 +99,24 @@ class CKY:
         self.unaryFill()
         self.binaryScan()
         # Replace the line below for Q6
-        return self.grammar.start() in self.matrix[0][self.n-1].labels()
+        if self.grammar.start() not in self.matrix[0][self.n-1].labels():
+            return False
+        else:
+            return len(self.matrix[0][self.n-1].labels())
 
     def unaryFill(self):
-        '''add docstring here'''
+        '''
+        Postcondition: filled in diagonal in CKY table (x,x+1) with corresponding word (terminal) and
+        constituent labels.
+
+        How: Add word and label from top left to bottom right of table by using unaryUpdate to label cells with parent node.
+        '''
+
+
         for r in range(self.n-1):
             cell=self.matrix[r][r+1]
             word=self.words[r]
-            cell.addLabel(word)
+            #cell.addLabel(word)
             cell.unaryUpdate(word)
 
     def binaryScan(self):
@@ -124,7 +142,16 @@ class CKY:
                     self.maybeBuild(start, mid, end)
 
     def maybeBuild(self, start, mid, end):
-        '''add docstring here'''
+        '''
+        Search for potential rules at cell positions determined by start, mid, end: Check whether cell labels
+        (constituents) can combine to a parent constituent by searching for the child node combination in the dictionary keys
+        If combination is in the dictionary, the corresponding value (lhs of rule) in the binary rules dictionary is added to
+        the cell. Can be multiple.
+        rule-building.
+        :param start, mid, end: integers to denote row and column indices
+        :return: Updated matrix
+        '''
+
         self.log("%s--%s--%s:",start, mid, end)
         cell=self.matrix[start][end]
         for s1 in self.matrix[start][mid].labels():
@@ -132,7 +159,7 @@ class CKY:
                 if (s1,s2) in self.binary:
                     for s in self.binary[(s1,s2)]:
                         self.log("%s -> %s %s", s, s1, s2, indent=1)
-                        cell.addLabel(s)
+                        #cell.addLabel(s)
                         cell.unaryUpdate(s,1)
 
 # helper methods from cky_print
@@ -148,14 +175,18 @@ class Cell:
         self._labels=[]
 
     def addLabel(self,label):
-        self._labels.append(label)
+        if label not in self._labels:
+            self._labels.append(label)
 
     def labels(self):
         return self._labels
 
     def unaryUpdate(self,symbol,depth=0,recursive=False):
-        '''add docstring here. You need NOT document the depth
-        and recursive arguments, which are used only for tracing.'''
+        '''
+        Postcondition: Prints unary rule from grammar that led to filling a cell in the CKY matrix and their parent rules.
+        How: Looks up child node (rhs) in unary dictionary and adds parent node (lhs) to cell
+        @:param symbol: word
+        '''
         if not recursive:
             self.log(str(symbol),indent=depth)
         if symbol in self.matrix.unary:
