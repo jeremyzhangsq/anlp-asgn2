@@ -116,7 +116,7 @@ class CKY:
         for r in range(self.n-1):
             cell=self.matrix[r][r+1]
             word=self.words[r]
-            #cell.addLabel(word)
+            cell.addLabel(word)
             cell.unaryUpdate(word)
 
     def binaryScan(self):
@@ -159,7 +159,7 @@ class CKY:
                 if (s1,s2) in self.binary:
                     for s in self.binary[(s1,s2)]:
                         self.log("%s -> %s %s", s, s1, s2, indent=1)
-                        #cell.addLabel(s)
+                        cell.addLabel(s)
                         cell.unaryUpdate(s,1)
 
 # helper methods from cky_print
